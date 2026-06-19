@@ -58,3 +58,30 @@ class BudgetSerializer(serializers.ModelSerializer):
     class Meta:
         model = Budget
         exclude = ["id", "deleted_at"]
+
+    def validate(self, attrs):
+        legal_entity = attrs.get("legal_entity") or (self.instance and self.instance.legal_entity)
+        branch = attrs.get("branch") or (self.instance and getattr(self.instance, "branch", None))
+        cost_center = attrs.get("cost_center") or (self.instance and getattr(self.instance, "cost_center", None))
+        category = attrs.get("category") or (self.instance and getattr(self.instance, "category", None))
+        period_year = attrs.get("period_year") or (self.instance and self.instance.period_year)
+        period_month = attrs.get("period_month") or (self.instance and self.instance.period_month)
+
+        qs = Budget.objects.filter(
+            legal_entity=legal_entity,
+            branch=branch,
+            cost_center=cost_center,
+            category=category,
+            period_year=period_year,
+            period_month=period_month,
+        )
+
+        if self.instance:
+            qs = qs.exclude(pk=self.instance.pk)
+
+        if qs.exists():
+            raise serializers.ValidationError(
+                "Ya existe un presupuesto para este período y alcance."
+            )
+
+        return attrs

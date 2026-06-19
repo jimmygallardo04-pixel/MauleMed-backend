@@ -48,3 +48,21 @@ class StockTransferSerializer(serializers.ModelSerializer):
     class Meta:
         model = StockTransfer
         exclude = ["id", "deleted_at"]
+
+    def validate(self, attrs):
+        origin = attrs.get("origin_branch") or (self.instance and self.instance.origin_branch)
+        destination = attrs.get("destination_branch") or (self.instance and self.instance.destination_branch)
+        transfer_type = attrs.get("transfer_type") or (self.instance and self.instance.transfer_type)
+        parent = attrs.get("parent_transfer") or (self.instance and self.instance.parent_transfer)
+
+        if origin and destination and origin == destination:
+            raise serializers.ValidationError(
+                "La sucursal de origen y destino no pueden ser iguales."
+            )
+
+        if transfer_type == StockTransfer.TRANSFER_TYPE_RETURN and not parent:
+            raise serializers.ValidationError(
+                "Una devolución debe estar asociada a un préstamo anterior."
+            )
+
+        return attrs

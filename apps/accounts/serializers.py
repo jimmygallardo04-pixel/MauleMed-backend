@@ -51,6 +51,31 @@ class UserRoleAssignmentSerializer(serializers.ModelSerializer):
         model = UserRoleAssignment
         exclude = ["id", "deleted_at"]
 
+    def validate(self, attrs):
+        user = attrs.get("user") or (self.instance and self.instance.user)
+        role = attrs.get("role") or (self.instance and self.instance.role)
+        organization = attrs.get("organization") or (self.instance and self.instance.organization)
+        legal_entity = attrs.get("legal_entity") or (self.instance and self.instance.legal_entity)
+        branch = attrs.get("branch") or (self.instance and self.instance.branch)
+
+        qs = UserRoleAssignment.objects.filter(
+            user=user,
+            role=role,
+            organization=organization,
+            legal_entity=legal_entity,
+            branch=branch,
+        )
+
+        if self.instance:
+            qs = qs.exclude(pk=self.instance.pk)
+
+        if qs.exists():
+            raise serializers.ValidationError(
+                "Ya existe una asignación de rol para este usuario con el mismo alcance."
+            )
+
+        return attrs
+
 
 class MeSerializer(serializers.Serializer):
     user = UserSerializer()

@@ -141,7 +141,7 @@ def increase_stock(
         lot.save(update_fields=["quantity", "supplier", "status", "updated_at"])
 
     movement = create_inventory_movement(
-        movement_type=moment_type,
+        movement_type=movement_type,
         warehouse_destination=warehouse,
         product=product,
         lot=lot,

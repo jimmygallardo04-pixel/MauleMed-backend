@@ -68,7 +68,7 @@ class RoleViewSet(BaseModelViewSet):
 
 
 class UserProfileViewSet(BaseModelViewSet):
-    queryset = UserProfile.objects.select_related("user", "organization").all()
+    queryset = UserProfile.objects.select_related("user", "organization").order_by("id").all()
     serializer_class = UserProfileSerializer
     permission_classes = [IsAdminRole]
 
@@ -80,7 +80,7 @@ class UserRoleAssignmentViewSet(BaseModelViewSet):
         "organization",
         "legal_entity",
         "branch",
-    ).all()
+    ).order_by("id").all()
     serializer_class = UserRoleAssignmentSerializer
     permission_classes = [IsAdminRole]
 

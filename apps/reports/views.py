@@ -1032,7 +1032,7 @@ def stock_history_report(request):
         InventoryMovement.TYPE_PURCHASE_IN,
         InventoryMovement.TYPE_ADJUSTMENT_IN,
         InventoryMovement.TYPE_TRANSFER,
-        InventoryMovement.TYPE_RETURN_IN,
+        InventoryMovement.TYPE_BRANCH_LOAN_RETURN,
     ]
 
     outgoing_types = [
