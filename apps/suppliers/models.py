@@ -1,5 +1,5 @@
 from django.db import models
-
+from django.conf import settings
 from apps.common.models import BaseModel
 from apps.products.models import Product
 
@@ -83,3 +83,83 @@ class SupplierProductPrice(BaseModel):
 
     def __str__(self):
         return f"{self.supplier_product} - {self.price}"
+
+
+class SupplierProductPriceHistory(BaseModel):
+    supplier_product = models.ForeignKey(
+        "SupplierProduct",
+        on_delete=models.PROTECT,
+        related_name="price_history",
+    )
+
+    price = models.DecimalField(
+        max_digits=18,
+        decimal_places=4,
+    )
+
+    currency = models.CharField(
+        max_length=10,
+        default="CLP",
+    )
+
+    effective_date = models.DateTimeField(
+        auto_now_add=True,
+    )
+
+    valid_until = models.DateTimeField(
+        null=True,
+        blank=True,
+    )
+
+    previous_price = models.DecimalField(
+        max_digits=18,
+        decimal_places=4,
+        null=True,
+        blank=True,
+    )
+
+    change_reason = models.CharField(
+        max_length=255,
+        blank=True,
+        default="",
+    )
+
+    source = models.CharField(
+        max_length=30,
+        choices=[
+            ("MANUAL", "Actualización manual"),
+            ("PURCHASE", "Orden de compra"),
+            ("IMPORT", "Importación"),
+            ("INITIAL", "Precio inicial"),
+        ],
+        default="MANUAL",
+    )
+
+    changed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="supplier_price_changes",
+    )
+
+    class Meta:
+        db_table = "supplier_product_price_history"
+        ordering = [
+            "-effective_date",
+            "-created_at",
+        ]
+        indexes = [
+            models.Index(
+                fields=[
+                    "supplier_product",
+                    "effective_date",
+                ],
+            ),
+        ]
+
+    def __str__(self):
+        return (
+            f"{self.supplier_product} - "
+            f"{self.price} {self.currency}"
+        )

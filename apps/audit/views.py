@@ -37,7 +37,18 @@ class AuditLogViewSet(BaseModelViewSet):
     ordering = ["-created_at"]
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        # Los logs de auditoría los crea el sistema automáticamente.
+        # No se permite la creación manual desde la API.
+        from rest_framework.exceptions import MethodNotAllowed
+        raise MethodNotAllowed("POST", detail="Los registros de auditoría se crean automáticamente por el sistema.")
+
+    def update(self, request, *args, **kwargs):
+        from rest_framework.exceptions import MethodNotAllowed
+        raise MethodNotAllowed("PUT/PATCH", detail="Los registros de auditoría no pueden modificarse.")
+
+    def destroy(self, request, *args, **kwargs):
+        from rest_framework.exceptions import MethodNotAllowed
+        raise MethodNotAllowed("DELETE", detail="Los registros de auditoría no pueden eliminarse.")
 
     @action(detail=False, methods=["get"], url_path="by-entity")
     def by_entity(self, request):

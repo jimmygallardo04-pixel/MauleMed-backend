@@ -1,13 +1,12 @@
 class SupplyRequestStatus:
-    DRAFT = "BORRADOR"
-    PENDING = "PENDIENTE"
-    SUBMITTED = "ENVIADA"
-    APPROVED = "APROBADA"
-    REJECTED = "RECHAZADA"
-    OBSERVED = "OBSERVADA"
-    CONVERTED_TO_PURCHASE_ORDER = "CONVERTIDA_OC"
-    CLOSED = "CERRADA"
-    CANCELLED = "CANCELADA"
+    DRAFT                     = "BORRADOR"
+    SUBMITTED                 = "ENVIADA"
+    IN_REVIEW                 = "EN_REVISION"
+    OBSERVED                  = "OBSERVADA"
+    APPROVED                  = "APROBADA"
+    REJECTED                  = "RECHAZADA"
+    PARTIALLY_APPROVED        = "PARCIALMENTE_APROBADA"
+    CONVERTED_TO_PURCHASE_ORDER = "CONVERTIDA_EN_COMPRA"
 
     VALID_FOR_CONVERSION = [
         APPROVED,
@@ -16,20 +15,20 @@ class SupplyRequestStatus:
     FINAL_STATUSES = [
         REJECTED,
         CONVERTED_TO_PURCHASE_ORDER,
-        CLOSED,
-        CANCELLED,
     ]
 
 
 class PurchaseOrderStatus:
-    DRAFT = "BORRADOR"
-    PENDING_APPROVAL = "PENDIENTE_APROBACION"
-    APPROVED = "APROBADA"
-    SENT_TO_SUPPLIER = "ENVIADA_PROVEEDOR"
-    PARTIALLY_RECEIVED = "RECIBIDA_PARCIAL"
-    RECEIVED = "RECIBIDA"
-    CLOSED = "CERRADA"
-    CANCELLED = "CANCELADA"
+    DRAFT              = "BORRADOR"
+    PENDING_APPROVAL   = "EN_APROBACION"
+    APPROVED           = "APROBADA"
+    SENT_TO_SUPPLIER   = "ENVIADA_PROVEEDOR"
+    ACCEPTED_BY_SUPPLIER = "ACEPTADA_PROVEEDOR"
+    REJECTED_BY_SUPPLIER = "RECHAZADA_PROVEEDOR"
+    PARTIALLY_RECEIVED = "PARCIALMENTE_RECIBIDA"
+    RECEIVED           = "RECIBIDA"
+    CANCELLED          = "CANCELADA"
+    CLOSED             = "CERRADA"
 
     VALID_FOR_SEND = [
         APPROVED,
@@ -38,6 +37,7 @@ class PurchaseOrderStatus:
     VALID_FOR_RECEIPT = [
         APPROVED,
         SENT_TO_SUPPLIER,
+        ACCEPTED_BY_SUPPLIER,
         PARTIALLY_RECEIVED,
     ]
 
@@ -49,29 +49,25 @@ class PurchaseOrderStatus:
 
 
 class PurchaseReceiptStatus:
-    DRAFT = "BORRADOR"
-    PENDING = "PENDIENTE"
-    PROCESSED = "PROCESADA"
-    COMPLETED = "COMPLETADA"
-    CANCELLED = "CANCELADA"
+    OK             = "RECIBIDO_OK"
+    PARTIAL        = "RECIBIDO_PARCIAL"
+    WITH_INCIDENT  = "CON_INCIDENCIA"
+    REJECTED       = "RECHAZADO"
 
-    FINAL_STATUSES = [
-        PROCESSED,
-        COMPLETED,
-        CANCELLED,
-    ]
+    # No hay estado "procesado/completado/cancelado" en el modelo.
+    # Los servicios verifican contra esta lista para evitar re-procesar.
+    FINAL_STATUSES: list = []
 
 
 class StockTransferStatus:
-    DRAFT = "BORRADOR"
-    PENDING = "PENDIENTE"
-    APPROVED = "APROBADO"
-    REJECTED = "RECHAZADO"
-    SENT = "ENVIADO"
-    PARTIALLY_RECEIVED = "RECIBIDO_PARCIAL"
-    RECEIVED = "RECIBIDO"
-    CLOSED = "CERRADO"
-    CANCELLED = "CANCELADO"
+    REQUESTED          = "SOLICITADO"
+    APPROVED           = "APROBADO"
+    REJECTED           = "RECHAZADO"
+    SENT               = "ENVIADO"
+    RECEIVED           = "RECIBIDO"
+    RETURNED           = "DEVUELTO"
+    CLOSED             = "CERRADO"
+    CANCELLED          = "CANCELADO"
 
     VALID_FOR_SEND = [
         APPROVED,
@@ -79,7 +75,6 @@ class StockTransferStatus:
 
     VALID_FOR_RECEIVE = [
         SENT,
-        PARTIALLY_RECEIVED,
     ]
 
     FINAL_STATUSES = [
@@ -91,17 +86,14 @@ class StockTransferStatus:
 
 
 class SupplierInvoiceStatus:
-    DRAFT = "BORRADOR"
-    PENDING = "PENDIENTE"
-    APPROVED = "APROBADA"
-    PAID = "PAGADA"
-    CANCELLED = "CANCELADA"
-    VOID = "ANULADA"
+    RECEIVED           = "RECIBIDA"
+    VALIDATED          = "VALIDADA"
+    PARTIALLY_PAID     = "PARCIALMENTE_PAGADA"
+    PAID               = "PAGADA"
+    VOID               = "ANULADA"
 
 
 class PaymentStatus:
-    DRAFT = "BORRADOR"
-    PENDING = "PENDIENTE"
-    PAID = "PAGADO"
-    FAILED = "FALLIDO"
-    CANCELLED = "CANCELADO"
+    PENDING    = "PENDIENTE"
+    PAID       = "PAGADO"
+    CANCELLED  = "ANULADO"

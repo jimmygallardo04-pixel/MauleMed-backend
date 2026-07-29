@@ -1,7 +1,5 @@
 import logging
 
-from django.forms.models import model_to_dict
-
 from apps.audit.models import AuditLog
 
 
@@ -9,24 +7,30 @@ logger = logging.getLogger(__name__)
 
 
 def serialize_instance(instance):
+    """
+    Serializa una instancia de modelo a un dict plano con todos los campos,
+    incluyendo los no editables (uuid, created_at, updated_at, deleted_at).
+    model_to_dict omite estos campos, por eso iteramos directamente sobre _meta.
+    """
     if not instance:
         return None
 
-    data = model_to_dict(instance)
-
-    if hasattr(instance, "uuid"):
-        data["uuid"] = str(instance.uuid)
-
-    # Convertimos valores no serializables a string
     clean_data = {}
 
-    for key, value in data.items():
+    for field in instance._meta.get_fields():
+        # Solo campos concretos (no relaciones inversas ni M2M)
+        if not hasattr(field, "attname"):
+            continue
+
+        attr  = field.attname
+        value = getattr(instance, attr, None)
+
         if value is None:
-            clean_data[key] = None
+            clean_data[attr] = None
         elif isinstance(value, (str, int, float, bool)):
-            clean_data[key] = value
+            clean_data[attr] = value
         else:
-            clean_data[key] = str(value)
+            clean_data[attr] = str(value)
 
     return clean_data
 

@@ -1,5 +1,5 @@
 """
-Configuración global de pytest para MauleMet-backend.
+Configuración global de pytest para MauleMed-backend.
 Ejecutar con: python manage.py test  o  pytest
 """
 import os

@@ -11,19 +11,13 @@ class UserProfile(BaseModel):
         on_delete=models.CASCADE,
         related_name="profile",
     )
-
-    rut = models.CharField(max_length=20, blank=True, null=True, unique=True)
-    phone = models.CharField(max_length=50, blank=True, null=True)
+    rut      = models.CharField(max_length=20, blank=True, null=True, unique=True)
+    phone    = models.CharField(max_length=50, blank=True, null=True)
     position = models.CharField(max_length=120, blank=True, null=True)
-
     organization = models.ForeignKey(
-        Organization,
-        on_delete=models.SET_NULL,
-        related_name="user_profiles",
-        blank=True,
-        null=True,
+        Organization, on_delete=models.SET_NULL,
+        related_name="user_profiles", blank=True, null=True,
     )
-
     is_active = models.BooleanField(default=True)
 
     class Meta:
@@ -34,42 +28,14 @@ class UserProfile(BaseModel):
 
 
 class Role(BaseModel):
-    ADMIN = "ADMIN"
-    GERENTE = "GERENTE"
-    ABASTECIMIENTO = "ABASTECIMIENTO"
-    FINANZAS = "FINANZAS"
-    RRHH = "RRHH"
-    JEFA_SUCURSAL = "JEFA_SUCURSAL"
-    SECRETARIA = "SECRETARIA"
-    TENS = "TENS"
-    TECNOLOGA_MEDICA = "TECNOLOGA_MEDICA"
-    DOCTOR = "DOCTOR"
-    BODEGUERO = "BODEGUERO"
-    PROVEEDOR = "PROVEEDOR"
-    MARKETING = "MARKETING"
-    CALIDAD = "CALIDAD"
-
-    ROLE_CHOICES = [
-        (ADMIN, "Administrador"),
-        (GERENTE, "Gerente"),
-        (ABASTECIMIENTO, "Abastecimiento"),
-        (FINANZAS, "Finanzas"),
-        (RRHH, "Recursos Humanos"),
-        (JEFA_SUCURSAL, "Jefa de Sucursal"),
-        (SECRETARIA, "Secretaria"),
-        (TENS, "TENS"),
-        (TECNOLOGA_MEDICA, "Tecnóloga Médica"),
-        (DOCTOR, "Doctor"),
-        (BODEGUERO, "Bodeguero"),
-        (PROVEEDOR, "Proveedor"),
-        (MARKETING, "Marketing"),
-        (CALIDAD, "Calidad"),
-    ]
-
-    code = models.CharField(max_length=50, choices=ROLE_CHOICES, unique=True)
-    name = models.CharField(max_length=120)
+    """
+    Rol del sistema. El código es libre — lo define el admin.
+    Los roles base del sistema se crean via fixtures/seed.
+    """
+    code        = models.CharField(max_length=50, unique=True)
+    name        = models.CharField(max_length=120)
     description = models.TextField(blank=True, null=True)
-    is_active = models.BooleanField(default=True)
+    is_active   = models.BooleanField(default=True)
 
     class Meta:
         db_table = "roles"
@@ -78,43 +44,41 @@ class Role(BaseModel):
         return self.name
 
 
+class RolePermission(BaseModel):
+    """
+    Permisos asignados a un rol. Persiste qué permission_key tiene cada rol.
+    Si existe una fila role+permission_key → el rol tiene ese permiso.
+    """
+    role           = models.ForeignKey(Role, on_delete=models.CASCADE, related_name="permissions")
+    permission_key = models.CharField(max_length=100)
+
+    class Meta:
+        db_table = "role_permissions"
+        constraints = [
+            models.UniqueConstraint(fields=["role", "permission_key"], name="uq_role_permission")
+        ]
+
+    def __str__(self):
+        return f"{self.role.code} → {self.permission_key}"
+
+
 class UserRoleAssignment(BaseModel):
     user = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
-        related_name="role_assignments",
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="role_assignments",
     )
-
-    role = models.ForeignKey(
-        Role,
-        on_delete=models.CASCADE,
-        related_name="user_assignments",
-    )
-
+    role = models.ForeignKey(Role, on_delete=models.CASCADE, related_name="user_assignments")
     organization = models.ForeignKey(
-        Organization,
-        on_delete=models.CASCADE,
-        related_name="role_assignments",
-        blank=True,
-        null=True,
+        Organization, on_delete=models.CASCADE, related_name="role_assignments",
+        blank=True, null=True,
     )
-
     legal_entity = models.ForeignKey(
-        LegalEntity,
-        on_delete=models.CASCADE,
-        related_name="role_assignments",
-        blank=True,
-        null=True,
+        LegalEntity, on_delete=models.CASCADE, related_name="role_assignments",
+        blank=True, null=True,
     )
-
     branch = models.ForeignKey(
-        Branch,
-        on_delete=models.CASCADE,
-        related_name="role_assignments",
-        blank=True,
-        null=True,
+        Branch, on_delete=models.CASCADE, related_name="role_assignments",
+        blank=True, null=True,
     )
-
     is_active = models.BooleanField(default=True)
 
     class Meta:

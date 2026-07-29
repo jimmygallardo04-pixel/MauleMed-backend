@@ -29,6 +29,33 @@ def decimal_to_str(value):
     return str(value)
 
 
+def paginate_list(request, data):
+    """
+    Pagina una lista Python usando ?page= y ?page_size= de la request.
+    Devuelve un dict compatible con el formato que espera el frontend.
+    """
+    try:
+        page = max(1, int(request.GET.get("page", 1)))
+    except (TypeError, ValueError):
+        page = 1
+
+    try:
+        page_size = min(500, max(1, int(request.GET.get("page_size", 50))))
+    except (TypeError, ValueError):
+        page_size = 50
+
+    total = len(data)
+    start = (page - 1) * page_size
+    end   = start + page_size
+
+    return {
+        "count":   total,
+        "page":    page,
+        "page_size": page_size,
+        "results": data[start:end],
+    }
+
+
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def inventory_stock_report(request):
@@ -89,10 +116,7 @@ def inventory_stock_report(request):
         )
 
     return api_response(
-        data={
-            "count": len(data),
-            "results": data,
-        },
+        data=paginate_list(request, data),
         message="Reporte de stock obtenido correctamente.",
     )
 
@@ -141,10 +165,11 @@ def inventory_movements_report(request):
         qs = qs.filter(product__uuid=product_uuid)
 
     if warehouse_uuid:
+        from django.db.models import Q
+        # Usar Q dentro del queryset ya filtrado por scope para no escapar el apply_branch_scope
         qs = qs.filter(
-            warehouse_origin__uuid=warehouse_uuid
-        ) | qs.filter(
-            warehouse_destination__uuid=warehouse_uuid
+            Q(warehouse_origin__uuid=warehouse_uuid) |
+            Q(warehouse_destination__uuid=warehouse_uuid)
         )
 
     data = []
@@ -170,10 +195,7 @@ def inventory_movements_report(request):
         )
 
     return api_response(
-        data={
-            "count": len(data),
-            "results": data,
-        },
+        data=paginate_list(request, data),
         message="Reporte de movimientos obtenido correctamente.",
     )
 
@@ -251,13 +273,12 @@ def purchases_report(request):
 
     return api_response(
         data={
-            "count": len(data),
+            **paginate_list(request, data),
             "totals": {
                 "subtotal_amount": decimal_to_str(totals["subtotal"]),
-                "tax_amount": decimal_to_str(totals["tax"]),
-                "total_amount": decimal_to_str(totals["total"]),
+                "tax_amount":      decimal_to_str(totals["tax"]),
+                "total_amount":    decimal_to_str(totals["total"]),
             },
-            "results": data,
         },
         message="Reporte de compras obtenido correctamente.",
     )
@@ -313,10 +334,7 @@ def supplier_spending_report(request):
         )
 
     return api_response(
-        data={
-            "count": len(data),
-            "results": data,
-        },
+        data=paginate_list(request, data),
         message="Reporte de gasto por proveedor obtenido correctamente.",
     )
 
@@ -392,10 +410,7 @@ def branch_consumption_report(request):
         )
 
     return api_response(
-        data={
-            "count": len(data),
-            "results": data,
-        },
+        data=paginate_list(request, data),
         message="Reporte de consumo por sucursal obtenido correctamente.",
     )
 
@@ -494,10 +509,7 @@ def finance_summary_report(request):
         )
 
     return api_response(
-        data={
-            "count": len(data),
-            "results": data,
-        },
+        data=paginate_list(request, data),
         message="Reporte financiero obtenido correctamente.",
     )
 
@@ -600,7 +612,11 @@ def inventory_movements_export_csv(request):
         qs = qs.filter(product__uuid=product_uuid)
 
     if warehouse_uuid:
-        qs = qs.filter(warehouse_origin__uuid=warehouse_uuid) | qs.filter(warehouse_destination__uuid=warehouse_uuid)
+        from django.db.models import Q
+        qs = qs.filter(
+            Q(warehouse_origin__uuid=warehouse_uuid) |
+            Q(warehouse_destination__uuid=warehouse_uuid)
+        )
 
     headers = [
         "Fecha",

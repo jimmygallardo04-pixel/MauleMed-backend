@@ -38,11 +38,7 @@ def get_or_create_stock(warehouse, product):
 
 def validate_available_stock(stock, quantity):
     quantity = to_decimal(quantity)
-    validate_positive_quantity(quantity, "La cantidad a liberar debe ser mayor a cero.")
-    validate_positive_quantity(quantity, "La cantidad a reservar debe ser mayor a cero.")
-    validate_positive_quantity(quantity, "La cantidad de salida debe ser mayor a cero.")
-    validate_positive_quantity(quantity, "La cantidad de ingreso debe ser mayor a cero.")
-
+    validate_positive_quantity(quantity, "La cantidad debe ser mayor a cero.")
     if stock.available_quantity < quantity:
         raise ValidationError(
             f"Stock insuficiente. Disponible: {stock.available_quantity}, requerido: {quantity}."

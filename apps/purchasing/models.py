@@ -8,6 +8,8 @@ from apps.products.models import Product
 from apps.suppliers.models import Supplier
 from apps.inventory.models import Warehouse
 
+from decimal import Decimal
+
 
 class SupplyRequest(BaseModel):
     STATUS_DRAFT = "BORRADOR"
@@ -305,24 +307,66 @@ class PurchaseOrderItem(BaseModel):
         on_delete=models.CASCADE,
         related_name="items",
     )
+
     product = models.ForeignKey(
         Product,
         on_delete=models.PROTECT,
         related_name="purchase_order_items",
     )
 
-    quantity = models.DecimalField(max_digits=14, decimal_places=3)
-    unit_price = models.DecimalField(max_digits=14, decimal_places=2, default=0)
-    discount_amount = models.DecimalField(max_digits=14, decimal_places=2, default=0)
-    tax_amount = models.DecimalField(max_digits=14, decimal_places=2, default=0)
-    total_amount = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+    supplier_product = models.ForeignKey(
+        "suppliers.SupplierProduct",
+        on_delete=models.PROTECT,
+        related_name="purchase_order_items",
+        null=True,
+        blank=True,
+    )
 
-    received_quantity = models.DecimalField(max_digits=14, decimal_places=3, default=0)
+    quantity = models.DecimalField(
+        max_digits=14,
+        decimal_places=3,
+    )
+
+    unit_price = models.DecimalField(
+        max_digits=14,
+        decimal_places=2,
+        default=0,
+    )
+
+    currency = models.CharField(
+        max_length=10,
+        default="CLP",
+    )
+
+    discount_amount = models.DecimalField(
+        max_digits=14,
+        decimal_places=2,
+        default=0,
+    )
+
+    tax_amount = models.DecimalField(
+        max_digits=14,
+        decimal_places=2,
+        default=0,
+    )
+
+    total_amount = models.DecimalField(
+        max_digits=14,
+        decimal_places=2,
+        default=0,
+    )
+
+    received_quantity = models.DecimalField(
+        max_digits=14,
+        decimal_places=3,
+        default=0,
+    )
 
     class Meta:
         db_table = "purchase_order_items"
         verbose_name = "Purchase Order Item"
         verbose_name_plural = "Purchase Order Items"
+
         constraints = [
             models.CheckConstraint(
                 check=models.Q(quantity__gt=0),
@@ -332,15 +376,72 @@ class PurchaseOrderItem(BaseModel):
                 check=models.Q(received_quantity__gte=0),
                 name="chk_po_item_received_non_negative",
             ),
+            models.CheckConstraint(
+                check=models.Q(unit_price__gte=0),
+                name="chk_po_item_unit_price_non_negative",
+            ),
+            models.CheckConstraint(
+                check=models.Q(discount_amount__gte=0),
+                name="chk_po_item_discount_non_negative",
+            ),
+            models.CheckConstraint(
+                check=models.Q(tax_amount__gte=0),
+                name="chk_po_item_tax_non_negative",
+            ),
         ]
 
     @property
     def pending_quantity(self):
         return self.quantity - self.received_quantity
 
+    @property
+    def subtotal_amount(self):
+        quantity = self.quantity or Decimal("0")
+        unit_price = self.unit_price or Decimal("0")
+        result = quantity * unit_price
+        return result.quantize(Decimal("0.01"))
+
+    def calculate_total_amount(self):
+        subtotal = self.subtotal_amount
+        discount = self.discount_amount or Decimal("0")
+        tax = self.tax_amount or Decimal("0")
+        result = subtotal - discount + tax
+        # Redondear a 2 decimales para cumplir con el campo DecimalField(decimal_places=2)
+        return result.quantize(Decimal("0.01"))
+
     def clean(self):
+        super().clean()
+
         if self.received_quantity > self.quantity:
-            raise ValidationError("La cantidad recibida no puede ser mayor a la cantidad comprada.")
+            raise ValidationError(
+                "La cantidad recibida no puede ser mayor "
+                "a la cantidad comprada."
+            )
+
+        if (
+            self.supplier_product
+            and self.supplier_product.product_id != self.product_id
+        ):
+            raise ValidationError({
+                "supplier_product": (
+                    "El producto asociado al proveedor no coincide "
+                    "con el producto de la línea."
+                ),
+            })
+
+        if self.discount_amount > self.subtotal_amount:
+            raise ValidationError({
+                "discount_amount": (
+                    "El descuento no puede ser mayor al subtotal."
+                ),
+            })
+
+    def save(self, *args, **kwargs):
+        self.total_amount = self.calculate_total_amount()
+
+        self.full_clean()
+
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.purchase_order} - {self.product}"

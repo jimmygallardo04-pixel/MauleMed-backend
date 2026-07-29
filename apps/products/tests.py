@@ -203,8 +203,8 @@ class ProductTests(BaseProductTest):
             "/api/products/",
             {
                 "name": "Paracetamol 500mg",
-                "category": self.category.id,
-                "unit": self.unit.id,
+                "category": str(self.category.uuid),
+                "unit": str(self.unit.uuid),
                 "is_active": True,
                 "is_medication": True,
                 "requires_lot": True,
@@ -260,8 +260,8 @@ class ProductTests(BaseProductTest):
             "/api/products/",
             {
                 "name": "Otro Prod",
-                "category": self.category.id,
-                "unit": self.unit.id,
+                "category": str(self.category.uuid),
+                "unit": str(self.unit.uuid),
                 "internal_code": "IC-UNIQUE-001",
                 "is_active": True,
             },

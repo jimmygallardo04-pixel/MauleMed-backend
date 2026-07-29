@@ -25,6 +25,8 @@ class BaseModelViewSet(ModelViewSet):
     - Respeta paginación estándar.
     - Registra logs por consola.
     - Registra auditoría automática para CREATE, UPDATE y DELETE.
+    - Garantiza que los registros con soft-delete (deleted_at__isnull=False)
+      nunca sean expuestos, incluso si el queryset de la subclase no filtra.
     """
 
     lookup_field = "uuid"
@@ -37,6 +39,15 @@ class BaseModelViewSet(ModelViewSet):
     success_delete_message = "Registro eliminado correctamente."
 
     enable_audit = True
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        # Guarda de soft delete: si el modelo tiene deleted_at, filtrar siempre.
+        # Esto cubre el caso en que una subclase use all_objects o no pase por
+        # ActiveManager, evitando que registros eliminados sean accesibles.
+        if hasattr(qs.model, "deleted_at"):
+            qs = qs.filter(deleted_at__isnull=True)
+        return qs
 
     def list(self, request, *args, **kwargs):
         logger.info(f"Listando registros en {self.__class__.__name__}")
@@ -142,7 +153,7 @@ class BaseModelViewSet(ModelViewSet):
 
         return api_response(
             data=None,
-            status_code=status.HTTP_200_OK,
+            status_code=status.HTTP_204_NO_CONTENT,
             message=self.success_delete_message,
         )
 

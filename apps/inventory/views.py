@@ -67,24 +67,31 @@ class InventoryStockViewSet(BaseModelViewSet):
 
     @action(detail=False, methods=["get"])
     def low_stock(self, request):
+        from apps.products.models import BranchProduct
+
         qs = self.get_queryset()
 
-        low_stock_items = []
+        # Cargar todos los BranchProduct relevantes en una sola query — evita N+1
+        branch_ids  = qs.values_list("warehouse__branch_id", flat=True).distinct()
+        product_ids = qs.values_list("product_id", flat=True).distinct()
 
-        for stock in qs:
-            branch_product = stock.product.branch_products.filter(
-                branch=stock.warehouse.branch,
+        branch_products = {
+            (bp.product_id, bp.branch_id): bp
+            for bp in BranchProduct.objects.filter(
+                branch_id__in=branch_ids,
+                product_id__in=product_ids,
                 is_active=True,
-            ).first()
+            )
+        }
 
-            if not branch_product:
+        low_stock_items = []
+        for stock in qs.select_related("warehouse__branch", "product"):
+            bp = branch_products.get((stock.product_id, stock.warehouse.branch_id))
+            if not bp:
                 continue
-
-            threshold = branch_product.critical_stock or branch_product.min_stock
-
+            threshold = bp.critical_stock or bp.min_stock
             if threshold is None:
                 continue
-
             if stock.available_quantity <= threshold:
                 low_stock_items.append(stock)
 
@@ -122,8 +129,12 @@ class InventoryLotViewSet(BaseModelViewSet):
             expiration_date__lte=limit_date,
         ).order_by("expiration_date")
 
-        serializer = self.get_serializer(qs, many=True)
+        page = self.paginate_queryset(qs)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
 
+        serializer = self.get_serializer(qs, many=True)
         return api_response(
             data=serializer.data,
             message="Lotes próximos a vencer obtenidos correctamente.",
@@ -138,8 +149,12 @@ class InventoryLotViewSet(BaseModelViewSet):
             expiration_date__lt=today,
         ).order_by("expiration_date")
 
-        serializer = self.get_serializer(qs, many=True)
+        page = self.paginate_queryset(qs)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
 
+        serializer = self.get_serializer(qs, many=True)
         return api_response(
             data=serializer.data,
             message="Lotes vencidos obtenidos correctamente.",

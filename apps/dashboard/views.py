@@ -75,6 +75,8 @@ def dashboard_summary(request):
     }
 
     if _is_inventory_user(user):
+        from apps.products.models import BranchProduct
+
         stocks_qs = InventoryStock.objects.select_related(
             "warehouse",
             "warehouse__branch",
@@ -87,21 +89,27 @@ def dashboard_summary(request):
             branch_field="warehouse__branch",
         )
 
+        # Cargar todos los BranchProduct relevantes de una sola query
+        # para evitar N+1 al calcular cuántos stocks están bajo el umbral
+        branch_ids = stocks_qs.values_list("warehouse__branch_id", flat=True).distinct()
+        product_ids = stocks_qs.values_list("product_id", flat=True).distinct()
+
+        branch_products = {
+            (bp.product_id, bp.branch_id): bp
+            for bp in BranchProduct.objects.filter(
+                branch_id__in=branch_ids,
+                product_id__in=product_ids,
+                is_active=True,
+            )
+        }
+
         low_stock_count = 0
-
         for stock in stocks_qs:
-            try:
-                branch_product = stock.product.branch_products.filter(
-                    branch=stock.warehouse.branch,
-                    is_active=True,
-                ).first()
-
-                if branch_product:
-                    threshold = branch_product.critical_stock or branch_product.min_stock
-                    if stock.available_quantity <= threshold:
-                        low_stock_count += 1
-            except Exception:
-                continue
+            bp = branch_products.get((stock.product_id, stock.warehouse.branch_id))
+            if bp:
+                threshold = bp.critical_stock or bp.min_stock
+                if threshold is not None and stock.available_quantity <= threshold:
+                    low_stock_count += 1
 
         expiring_limit = timezone.now().date() + timedelta(days=30)
 

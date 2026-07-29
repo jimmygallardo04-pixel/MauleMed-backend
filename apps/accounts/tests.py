@@ -342,8 +342,8 @@ class UserRoleAssignmentTests(TestCase):
             "/api/user-role-assignments/",
             {
                 "user": self.user.id,
-                "role": self.role.id,
-                "branch": self.branch.id,
+                "role": str(self.role.uuid),
+                "branch": str(self.branch.uuid),
                 "is_active": True,
             },
             format="json",
@@ -363,8 +363,8 @@ class UserRoleAssignmentTests(TestCase):
             "/api/user-role-assignments/",
             {
                 "user": self.user.id,
-                "role": self.role.id,
-                "branch": self.branch.id,
+                "role": str(self.role.uuid),
+                "branch": str(self.branch.uuid),
                 "is_active": True,
             },
             format="json",

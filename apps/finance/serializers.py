@@ -1,11 +1,13 @@
 from rest_framework import serializers
 
 from apps.accounts.serializers import UserSerializer
+from apps.organizations.models import Branch, CostCenter
 from apps.organizations.serializers import (
     LegalEntitySmallSerializer,
     BranchSmallSerializer,
     CostCenterSmallSerializer,
 )
+from apps.products.models import ProductCategory
 from apps.products.serializers import ProductCategorySmallSerializer
 from apps.suppliers.serializers import SupplierSmallSerializer
 from apps.purchasing.serializers import PurchaseOrderSmallSerializer
@@ -48,6 +50,24 @@ class BudgetSerializer(serializers.ModelSerializer):
     branch_detail = BranchSmallSerializer(source="branch", read_only=True)
     cost_center_detail = CostCenterSmallSerializer(source="cost_center", read_only=True)
     category_detail = ProductCategorySmallSerializer(source="category", read_only=True)
+
+    # branch, cost_center y category son FK nullable en el modelo.
+    # DRF los marca como required a menos que declaremos allow_null=True explícitamente.
+    branch = serializers.PrimaryKeyRelatedField(
+        queryset=Branch.objects.all(),
+        required=False,
+        allow_null=True,
+    )
+    cost_center = serializers.PrimaryKeyRelatedField(
+        queryset=CostCenter.objects.all(),
+        required=False,
+        allow_null=True,
+    )
+    category = serializers.PrimaryKeyRelatedField(
+        queryset=ProductCategory.objects.all(),
+        required=False,
+        allow_null=True,
+    )
 
     available_amount = serializers.DecimalField(
         max_digits=14,

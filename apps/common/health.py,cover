@@ -11,7 +11,7 @@
 >     return api_response(
 >         data={
 >             "status": "ok",
->             "service": "MauleMet API",
+>             "service": "MauleMed API",
 >         },
 >         message="Servicio disponible.",
 >     )

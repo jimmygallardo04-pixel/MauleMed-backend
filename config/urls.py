@@ -31,6 +31,7 @@ urlpatterns = [
     path("api/", include("apps.dashboard.urls")),
     path("api/", include("apps.options.urls")),
     path("api/", include("apps.reports.urls")),
+    path("api/", include("apps.evaluations.urls")),
 
     path("api/health/", health, name="health"),
     path("api/health/db/", health_db, name="health-db"),

@@ -28,6 +28,16 @@ DEBUG = config('DEBUG', default=False, cast=bool)
 
 ALLOWED_HOSTS = config("ALLOWED_HOSTS", default="localhost,127.0.0.1").split(",")
 
+GOOGLE_CLIENT_ID = config("GOOGLE_CLIENT_ID", default="")
+GOOGLE_CLIENT_SECRET = config("GOOGLE_CLIENT_SECRET", default="")
+GOOGLE_REFRESH_TOKEN = config("GOOGLE_REFRESH_TOKEN", default="")
+
+SUPABASE_URL = config("SUPABASE_URL", default="")
+
+SUPABASE_SECRET_KEY = config("SUPABASE_SECRET_KEY", default="")
+
+SUPABASE_STORAGE_BUCKET = config("SUPABASE_STORAGE_BUCKET", default="MauleMed-Imagenes")
+
 # Application definition
 
 INSTALLED_APPS = [
@@ -57,6 +67,7 @@ INSTALLED_APPS = [
     "apps.dashboard.apps.DashboardConfig",
     "apps.options.apps.OptionsConfig",
     "apps.reports.apps.ReportsConfig",
+    "apps.evaluations.apps.EvaluationsConfig",
 ]
 
 MIDDLEWARE = [
@@ -130,9 +141,9 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = 'es-cl'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'America/Santiago'
 
 USE_I18N = True
 
@@ -143,6 +154,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = 'static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
@@ -170,6 +182,25 @@ REST_FRAMEWORK = {
     "PAGE_SIZE": 20,
     "EXCEPTION_HANDLER": "apps.common.exceptions.custom_exception_handler",
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    # ── Throttling ────────────────────────────────────────────────────────────
+    # ScopedRateThrottle permite asignar límites distintos por vista usando
+    # throttle_scope en el ViewSet o la view.
+    "DEFAULT_THROTTLE_CLASSES": [
+        "rest_framework.throttling.AnonRateThrottle",
+        "rest_framework.throttling.UserRateThrottle",
+        "rest_framework.throttling.ScopedRateThrottle",
+    ],
+    "DEFAULT_THROTTLE_RATES": {
+        # Límite global para usuarios anónimos (peticiones sin token)
+        "anon": "60/minute",
+        # Límite global para usuarios autenticados
+        "user": "600/minute",
+        # Scope específico para el endpoint de login — protección contra fuerza bruta
+        # 10 intentos por minuto por IP; después devuelve 429 automáticamente
+        "login": "10/minute",
+        # Scope para refresh token — menos restrictivo pero limitado
+        "token_refresh": "30/minute",
+    },
 }
 LOG_DIR = BASE_DIR / "logs"
 LOG_DIR.mkdir(exist_ok=True)
@@ -209,7 +240,7 @@ LOGGING = {
 }
 
 SPECTACULAR_SETTINGS = {
-    "TITLE": "MauleMet API",
+    "TITLE": "MauleMed API",
     "DESCRIPTION": "API de gestión de abastecimiento, inventario, compras, traspasos, finanzas, auditoría y notificaciones.",
     "VERSION": "1.0.0",
     "SERVE_INCLUDE_SCHEMA": False,

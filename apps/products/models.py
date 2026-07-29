@@ -44,6 +44,7 @@ class Product(BaseModel):
     sku = models.CharField(max_length=100, blank=True, null=True)
     barcode = models.CharField(max_length=100, blank=True, null=True)
     internal_code = models.CharField(max_length=100, unique=True, blank=True, null=True)
+    image_path = models.CharField(max_length=500, blank=True, default="")
 
     requires_lot = models.BooleanField(default=False)
     requires_expiration_date = models.BooleanField(default=False)

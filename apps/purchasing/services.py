@@ -56,7 +56,7 @@ def process_purchase_receipt(*, purchase_receipt, user):
     validate_status_not_in(
         purchase_receipt,
         PurchaseReceiptStatus.FINAL_STATUSES,
-        message="Esta recepción ya fue procesada, completada o cancelada.",
+        message="Esta recepción no puede ser procesada en su estado actual.",
     )
 
     validate_has_items(
@@ -235,12 +235,22 @@ def _update_purchase_order_status_by_receipts(purchase_order):
 
 
 def generate_purchase_order_number():
+    """
+    Genera un número único de OC con formato OC-YYYYMMDD-NNNN.
+    Usa select_for_update en una transacción para evitar duplicados en concurrencia.
+    """
+    from django.db import transaction as db_transaction
+
     today = timezone.now().date()
     prefix = today.strftime("OC-%Y%m%d")
 
-    count = PurchaseOrder.objects.filter(
-        order_number__startswith=prefix
-    ).count() + 1
+    with db_transaction.atomic():
+        # Bloquea las filas del día para contar de forma segura
+        count = (
+            PurchaseOrder.objects.select_for_update()
+            .filter(order_number__startswith=prefix)
+            .count()
+        ) + 1
 
     return f"{prefix}-{count:04d}"
 
@@ -353,8 +363,8 @@ def convert_supply_request_to_purchase_order(
         raise ValidationError("No hay ítems con cantidad válida para convertir.")
 
     subtotal_amount = sum(item["total_amount"] for item in items_to_convert)
-    tax_amount = subtotal_amount * to_decimal(tax_rate)
-    total_amount = subtotal_amount + tax_amount
+    tax_amount = (subtotal_amount * to_decimal(tax_rate)).quantize(Decimal("0.01"))
+    total_amount = (subtotal_amount + tax_amount).quantize(Decimal("0.01"))
 
     purchase_order = PurchaseOrder.objects.create(
         supplier=supplier,

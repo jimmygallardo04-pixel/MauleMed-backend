@@ -314,7 +314,7 @@ class HealthTests(TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         data = response.json()["data"]
         self.assertEqual(data["status"], "ok")
-        self.assertEqual(data["service"], "MauleMet API")
+        self.assertEqual(data["service"], "MauleMed API")
 
     def test_health_db_sin_autenticacion(self):
         response = self.client.get("/api/health/db/")

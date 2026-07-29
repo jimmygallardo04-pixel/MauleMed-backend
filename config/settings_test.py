@@ -1,10 +1,17 @@
 """
-Settings para tests: usa SQLite en memoria y deshabilita SSL.
-Ejecutar con: python manage.py test --settings=config.settings_test
-"""
-from config.settings import *  # noqa
+Settings para el entorno de CI / tests.
+Hereda de settings.py y sobreescribe solo lo necesario para correr en CI
+sin credenciales de base de datos reales.
 
-# Usar SQLite en memoria para tests (más rápido, sin necesitar PostgreSQL)
+Uso:
+    python manage.py test --settings=config.settings_test
+    pytest --ds=config.settings_test
+"""
+from config.settings import *  # noqa: F401, F403
+
+# ── Base de datos ─────────────────────────────────────────────────────────────
+# Usa SQLite en memoria para que los tests sean rápidos y no necesiten
+# credenciales externas. No requiere instalación adicional.
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
@@ -12,41 +19,20 @@ DATABASES = {
     }
 }
 
-# Deshabilitar migraciones en tests para mayor velocidad (opcional)
-# Si se necesitan las migraciones reales, comentar estas líneas
-class DisableMigrations:
-    def __contains__(self, item):
-        return True
-
-    def __getitem__(self, item):
-        return None
-
-# Descomentar para deshabilitar migraciones en tests:
-# MIGRATION_MODULES = DisableMigrations()
-
-# Desactivar logging durante tests
-LOGGING = {
-    "version": 1,
-    "disable_existing_loggers": True,
-    "handlers": {
-        "null": {
-            "class": "logging.NullHandler",
-        }
-    },
-    "root": {
-        "handlers": ["null"],
-        "level": "CRITICAL",
-    },
-}
-
-# Usar hasher de contraseña más rápido en tests
+# ── Seguridad / rendimiento ───────────────────────────────────────────────────
+# Hash de contraseñas más rápido en tests (no importa la seguridad aquí)
 PASSWORD_HASHERS = [
     "django.contrib.auth.hashers.MD5PasswordHasher",
 ]
 
-# SimpleJWT — reducir tiempos de expiración
-from datetime import timedelta
-SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(hours=1),
-    "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
+# Sin throttling en tests para no interferir con las aserciones HTTP
+REST_FRAMEWORK["DEFAULT_THROTTLE_CLASSES"] = []  # noqa: F405
+REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"] = {}    # noqa: F405
+
+# Silenciar logs innecesarios durante los tests
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": True,
+    "handlers": {"null": {"class": "logging.NullHandler"}},
+    "root": {"handlers": ["null"]},
 }
